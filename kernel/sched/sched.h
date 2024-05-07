@@ -2,6 +2,19 @@
 /*
  * Scheduler internal types and methods:
  */
+#ifdef CONFIG_SCHED_MUQSS
+#include "MuQSS.h"
+
+/* Begin compatibility wrappers for MuQSS/CFS differences */
+#define rq_rt_nr_running(rq) ((rq)->rt_nr_running)
+#define rq_h_nr_running(rq) ((rq)->nr_running)
+
+#else /* CONFIG_SCHED_MUQSS */
+
+#define rq_rt_nr_running(rq) ((rq)->rt.rt_nr_running)
+#define rq_h_nr_running(rq) ((rq)->cfs.h_nr_running)
+
+
 #ifndef _KERNEL_SCHED_SCHED_H
 #define _KERNEL_SCHED_SCHED_H
 
@@ -3271,6 +3284,28 @@ static inline bool is_per_cpu_kthread(struct task_struct *p)
 
 extern void swake_up_all_locked(struct swait_queue_head *q);
 extern void __prepare_to_swait(struct swait_queue_head *q, struct swait_queue *wait);
+
+/* MuQSS compatibility functions */
+#ifdef CONFIG_64BIT
+static inline u64 read_sum_exec_runtime(struct task_struct *t)
+{
+	return t->se.sum_exec_runtime;
+}
+#else
+static inline u64 read_sum_exec_runtime(struct task_struct *t)
+{
+	u64 ns;
+	struct rq_flags rf;
+	struct rq *rq;
+
+	rq = task_rq_lock(t, &rf);
+	ns = t->se.sum_exec_runtime;
+	task_rq_unlock(rq, t, &rf);
+
+	return ns;
+}
+#endif
+#endif /* CONFIG_SCHED_MUQSS */
 
 extern int try_to_wake_up(struct task_struct *tsk, unsigned int state, int wake_flags);
 

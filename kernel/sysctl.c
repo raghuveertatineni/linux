@@ -92,6 +92,30 @@ EXPORT_SYMBOL_GPL(sysctl_long_vals);
 
 /* Constants used for minimum and maximum */
 
+#ifdef CONFIG_LOCKUP_DETECTOR
+static int sixty = 60;
+#endif
+
+static int __maybe_unused neg_one = -1;
+static int __maybe_unused two = 2;
+static int __maybe_unused four = 4;
+static unsigned long zero_ul;
+static unsigned long one_ul = 1;
+static unsigned long long_max = LONG_MAX;
+static int one_hundred = 100;
+static int two_hundred = 200;
+static int one_thousand = 1000;
+static int zero = 0;
+static int one = 1;
+#ifdef CONFIG_SCHED_MUQSS
+extern int rr_interval;
+extern int sched_interactive;
+extern int sched_iso_cpu;
+extern int sched_yield_type;
+#endif
+#ifdef CONFIG_PRINTK
+static int ten_thousand = 10000;
+#endif
 #ifdef CONFIG_PERF_EVENTS
 static const int six_hundred_forty_kb = 640 * 1024;
 #endif
@@ -1623,6 +1647,56 @@ static struct ctl_table kern_table[] = {
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec,
 	},
+#if defined(CONFIG_SCHED_MUQSS)
+    {
+		.procname	= "rr_interval",
+		.data		= &rr_interval,
+		.maxlen		= sizeof (int),
+		.mode		= 0644,
+		.proc_handler	= &proc_dointvec_minmax,
+		.extra1		= &one,
+		.extra2		= &one_thousand,
+	},
+	{
+		.procname	= "interactive",
+		.data		= &sched_interactive,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= &proc_dointvec_minmax,
+		.extra1		= &zero,
+		.extra2		= &one,
+	},
+	{
+		.procname	= "iso_cpu",
+		.data		= &sched_iso_cpu,
+		.maxlen		= sizeof (int),
+		.mode		= 0644,
+		.proc_handler	= &proc_dointvec_minmax,
+		.extra1		= &zero,
+		.extra2		= &one_hundred,
+	},
+	{
+		.procname	= "yield_type",
+		.data		= &sched_yield_type,
+		.maxlen		= sizeof (int),
+		.mode		= 0644,
+		.proc_handler	= &proc_dointvec_minmax,
+		.extra1		= &zero,
+		.extra2		= &two,
+	},
+#if defined(CONFIG_SMP) && defined(CONFIG_SCHEDSTATS)
+	{
+		.procname	= "sched_schedstats",
+		.data		= NULL,
+		.maxlen		= sizeof(unsigned int),
+		.mode		= 0644,
+		.proc_handler	= sysctl_schedstats,
+		.extra1		= SYSCTL_ZERO,
+		.extra2		= SYSCTL_ONE,
+	},
+#endif /* CONFIG_SMP && CONFIG_SCHEDSTATS */
+#endif /* CONFIG_SCHED_MUQSS */
+
 #ifdef CONFIG_PROC_SYSCTL
 	{
 		.procname	= "tainted",
